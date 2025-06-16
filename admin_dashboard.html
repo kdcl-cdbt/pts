@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Quản lý Minh chứng</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <h1>Quản lý Minh chứng</h1>
+        <div class="user-info-logout">
+        <span id="loggedInUsernameDisplay" class="username-display"></span>
+        <a href="login.html" class="logout-button" id="logoutButton">Đăng xuất</a>
+        </div>
+    </div>
+
+    <!--<button class="add-button" id="addNewProofButton">Thêm Minh chứng Mới</button> -->
+
+<div class="add-button-container">
+    <button class="add-button" id="addNewProofButton">Thêm Minh chứng mới</button>
+</div>
+
+    <div class="search-container">
+        <input type="text" id="searchTerm" placeholder="Nhập từ khóa tìm kiếm...">
+        <select id="searchColumn">
+            <option value="all">Tìm tất cả các cột</option>
+            <option value="ID">ID</option>
+            <option value="Tiêu chí">Tiêu chí</option>
+            <option value="Tiêu chuẩn">Tiêu chuẩn</option>
+            <option value="Mã minh chứng">Mã minh chứng</option>
+            <option value="Mã dùng chung">Mã dùng chung</option>
+            <option value="Tên minh chứng">Tên minh chứng</option>
+        </select>
+        <button id="searchButton">Tìm kiếm</button>
+        <button id="clearSearchButton">Xóa tìm kiếm</button>
+    </div>
+
+    <table class="admin-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tiêu chí</th>
+                <th>Tiêu chuẩn</th>
+                <th>Mã minh chứng</th>
+                <th>Mã dùng chung</th>
+                <th>Tên minh chứng</th>
+                <th>File minh chứng</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody id="proofsTableBody">
+            </tbody>
+    </table>
+
+    <div id="proofModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3 id="modalTitle">Thêm Minh chứng mới</h3>
+
+            <form id="proofForm">
+                <input type="hidden" id="proofId" name="id"> <div class="input-group">
+                    <label for="tieuChi">Tiêu chí:</label>
+                    <input type="text" id="tieuChi" name="tieuChi" required>
+                </div>
+                <div class="input-group">
+                    <label for="tieuChuan">Tiêu chuẩn:</label>
+                    <input type="text" id="tieuChuan" name="tieuChuan" required>
+                </div>
+                <div class="input-group">
+                    <label for="maMinhChung">Mã minh chứng:</label>
+                    <input type="text" id="maMinhChung" name="maMinhChung">
+                </div>
+                <div class="input-group">
+                    <label for="maDungChung">Mã dùng chung:</label>
+                    <input type="text" id="maDungChung" name="maDungChung">
+                </div>
+                <div class="input-group">
+                    <label for="tenMinhChung">Tên minh chứng:</label>
+                    <input type="text" id="tenMinhChung" name="tenMinhChung" required>
+                </div>
+                <div class="input-group">
+                    <label for="fileUpload">Chọn File minh chứng:</label>
+                    <input type="file" id="fileUpload" name="fileUpload">
+                    <p style="font-size: 0.9em; color: #666;">(Chỉ chọn file nếu muốn cập nhật/thêm mới file)</p>
+                </div>
+                <input type="hidden" id="currentFileUrl" name="fileMinhChung"> 
+                <button type="submit" class="save">Lưu</button>
+                <button type="button" class="cancel" id="cancelProofModal">Hủy</button>
+                <p id="modalMessage" class="modal-message error"></p>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwE-WhSz4iZ_FoUEBjGzTOvgYd5DGYvCEymYIBnqV3bDtWTukDhaugz-NaDtAtc-Qz9/exec'; // <-- Dán URL WEB APP VÀO ĐÂY
+
+        // Kiểm tra quyền truy cập khi tải trang
+        const userType = localStorage.getItem('loggedInUserType');
+        if (userType !== 'admin') {
+            alert('Bạn không có quyền truy cập trang này. Vui lòng đăng nhập với tài khoản Admin.');
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            localStorage.removeItem('loggedInUserType');
+        });
+
+        const proofsTableBody = document.getElementById('proofsTableBody');
+        const proofModal = document.getElementById('proofModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const proofForm = document.getElementById('proofForm');
+        const proofIdInput = document.getElementById('proofId');
+        const tieuChiInput = document.getElementById('tieuChi');
+        const tieuChuanInput = document.getElementById('tieuChuan');
+        const maMinhChungInput = document.getElementById('maMinhChung');
+        const maDungChungInput = document.getElementById('maDungChung');
+        const tenMinhChungInput = document.getElementById('tenMinhChung');
+        const fileUploadInput = document.getElementById('fileUpload');
+        const currentFileUrlInput = document.getElementById('currentFileUrl');
+        const modalMessage = document.getElementById('modalMessage');
+
+        const searchTermInput = document.getElementById('searchTerm');
+        const searchColumnSelect = document.getElementById('searchColumn');
+        const searchButton = document.getElementById('searchButton');
+        const clearSearchButton = document.getElementById('clearSearchButton');
+
+        // Đóng modal
+        document.querySelector('.close-button').addEventListener('click', () => {
+            proofModal.style.display = 'none';
+            modalMessage.textContent = ''; // Clear message on close
+        });
+        document.getElementById('cancelProofModal').addEventListener('click', () => {
+            proofModal.style.display = 'none';
+            modalMessage.textContent = ''; // Clear message on close
+        });
+        window.addEventListener('click', (event) => {
+            if (event.target == proofModal) {
+                proofModal.style.display = 'none';
+                modalMessage.textContent = ''; // Clear message on close
+            }
+        });
+
+        // Hàm tải và hiển thị dữ liệu
+        async function renderProofsTable(searchParams = null) {
+            proofsTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Đang tải dữ liệu...</td></tr>';
+            
+            const params = searchParams || new URLSearchParams(); 
+            params.append('action', searchParams ? 'searchProofs' : 'getData');
+
+            try {
+                const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    body: params
+                });
+                const result = await response.json();
+
+                proofsTableBody.innerHTML = ''; // Xóa thông báo tải
+
+                if (result.status === 'success' && result.data.length > 0) {
+                    result.data.forEach(proof => {
+                        const row = proofsTableBody.insertRow();
+                        row.innerHTML = `
+                            <td>${proof.ID || ''}</td>
+                            <td>${proof['Tiêu chí'] || ''}</td>
+                            <td>${proof['Tiêu chuẩn'] || ''}</td>
+                            <td>${proof['Mã minh chứng'] || ''}</td>
+                            <td>${proof['Mã dùng chung'] || ''}</td>
+                            <td>${proof['Tên minh chứng'] || ''}</td>
+                            <td>${proof['File minh chứng'] ? `<a href="${proof['File minh chứng']}" target="_blank">Xem File</a>` : 'N/A'}</td>
+                            <td class="action-buttons">
+                                <button class="edit-button" data-id="${proof.ID}">Sửa</button>
+                                <button class="delete-button" data-id="${proof.ID}">Xóa</button>
+                            </td>
+                        `;
+                    });
+
+                    attachTableButtonListeners(); // <<< ĐẢM BẢO HÀM NÀY ĐƯỢC GỌI Ở ĐÂY
+                } else {
+                    proofsTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">' + (searchTermInput.value ? 'Không tìm thấy minh chứng phù hợp.' : 'Không có dữ liệu minh chứng.') + '</td></tr>';
+                }
+            } catch (error) {
+                console.error('Lỗi tải dữ liệu:', error);
+                proofsTableBody.innerHTML = '<tr><td colspan="8" style="color:red; text-align:center;">Đã có lỗi xảy ra khi tải dữ liệu. Vui lòng kiểm tra console.</td></tr>';
+            }
+        }
+
+        // Gắn sự kiện cho các nút Sửa/Xóa (chỉ được gọi sau khi bảng được render)
+        function attachTableButtonListeners() {
+            document.querySelectorAll('.edit-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const id = parseInt(event.target.dataset.id);
+                    const row = event.target.closest('tr');
+                    const cells = row.cells;
+
+                    modalTitle.textContent = 'Sửa Minh chứng';
+                    proofIdInput.value = id;
+                    tieuChiInput.value = cells[1].textContent;
+                    tieuChuanInput.value = cells[2].textContent;
+                    maMinhChungInput.value = cells[3].textContent;
+                    maDungChungInput.value = cells[4].textContent;
+                    tenMinhChungInput.value = cells[5].textContent;
+
+                    const fileLink = cells[6].querySelector('a');
+                    currentFileUrlInput.value = fileLink ? fileLink.href : ''; // Lưu URL hiện tại vào hidden input
+                    fileUploadInput.value = ''; // Reset input file để người dùng có thể chọn file mới
+                    modalMessage.textContent = '';
+                    modalMessage.classList.remove('success', 'error', 'info');
+                    proofModal.style.display = 'flex';
+                });
+            });
+
+            document.querySelectorAll('.delete-button').forEach(button => {
+                button.addEventListener('click', async (event) => {
+                    const id = event.target.dataset.id;
+                    if (confirm('Bạn có chắc chắn muốn xóa minh chứng ID: ' + id + '? Thao tác này cũng sẽ xóa file trên Google Drive.')) {
+                        const params = new URLSearchParams();
+                        params.append('action', 'deleteProof');
+                        params.append('id', id);
+
+                        try {
+                            const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                                method: 'POST',
+                                body: params
+                            });
+                            const result = await response.json();
+                            if (result.status === 'success') {
+                                alert('Xóa thành công!');
+                                renderProofsTable(); // Tải lại bảng sau khi xóa
+                            } else {
+                                alert('Lỗi xóa: ' + result.message);
+                                console.error('Delete error from backend:', result.message);
+                            }
+                        } catch (error) {
+                            console.error('Lỗi khi xóa:', error);
+                            alert('Đã có lỗi xảy ra khi xóa. Vui lòng kiểm tra console.');
+                        }
+                    }
+                });
+            });
+        }
+
+        // Mở modal thêm mới
+        document.getElementById('addNewProofButton').addEventListener('click', function() {
+            modalTitle.textContent = 'Thêm Minh chứng Mới';
+            proofForm.reset(); // Đặt lại tất cả các trường trong form
+            proofIdInput.value = ''; // Đảm bảo ID trống cho thêm mới
+            currentFileUrlInput.value = ''; // Xóa URL file cũ
+            fileUploadInput.value = ''; // Xóa file đã chọn trước đó
+            modalMessage.textContent = '';
+            modalMessage.classList.remove('success', 'error', 'info');
+            proofModal.style.display = 'flex';
+        });
+
+        // Xử lý submit form thêm/sửa
+        proofForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const isEditing = proofIdInput.value !== '';
+            const formData = new FormData(this); // Tạo FormData từ form
+
+            formData.append('action', isEditing ? 'updateProof' : 'addProof');
+
+            // Xử lý logic cho fileMinhChung (URL cũ) và fileUpload (file mới)
+            // Nếu là chỉnh sửa và KHÔNG CÓ FILE MỚI được chọn, nhưng CÓ URL CŨ:
+            if (isEditing && fileUploadInput.files.length === 0 && currentFileUrlInput.value) {
+                // Đảm bảo param fileMinhChung được gửi với URL cũ
+                formData.append('fileMinhChung', currentFileUrlInput.value);
+            } 
+            // Nếu có file mới được chọn, không cần làm gì với fileMinhChung,
+            // vì formData đã tự động thêm fileUpload blob và backend sẽ xử lý.
+            // URL cũ sẽ bị ghi đè bởi URL mới từ fileUpload.
+
+            modalMessage.textContent = 'Đang xử lý...';
+            modalMessage.classList.remove('success', 'error');
+            modalMessage.classList.add('info');
+
+            try {
+                const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData // Gửi FormData chứa tất cả dữ liệu (bao gồm file nếu có)
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    modalMessage.style.color = 'green';
+                    modalMessage.textContent = result.message;
+                    modalMessage.classList.add('success');
+                    proofForm.reset();
+                    renderProofsTable(); // Tải lại bảng để hiển thị dữ liệu mới
+                    setTimeout(() => {
+                        proofModal.style.display = 'none';
+                        modalMessage.textContent = '';
+                    }, 2000);
+                } else {
+                    modalMessage.style.color = 'red';
+                    modalMessage.textContent = 'Lỗi: ' + result.message;
+                    modalMessage.classList.add('error');
+                    console.error('Backend returned error:', result.message);
+                }
+            } catch (error) {
+                console.error('Lỗi khi gửi form:', error);
+                modalMessage.style.color = 'red';
+                modalMessage.textContent = 'Đã có lỗi xảy ra. Vui lòng thử lại. Kiểm tra console.';
+            }
+        });
+
+        // Xử lý tìm kiếm
+        searchButton.addEventListener('click', () => {
+            const searchTerm = searchTermInput.value.trim();
+            const searchColumn = searchColumnSelect.value;
+
+            const params = new URLSearchParams();
+            params.append('searchTerm', searchTerm);
+            params.append('searchColumn', searchColumn);
+            renderProofsTable(params);
+        });
+
+        // Xử lý xóa tìm kiếm
+        clearSearchButton.addEventListener('click', () => {
+            searchTermInput.value = '';
+            searchColumnSelect.value = 'all';
+            renderProofsTable(); // Tải lại tất cả dữ liệu
+        });
+
+        // Tải dữ liệu lần đầu
+        renderProofsTable();
+
+        // Thêm vào cuối cùng của thẻ <script> trong admin_dashboard.html
+    document.addEventListener('DOMContentLoaded', () => {
+    const usernameDisplay = document.getElementById('loggedInUsernameDisplay');
+    const loggedInUsername = localStorage.getItem('loggedInUsername');
+
+    if (loggedInUsername) {
+        usernameDisplay.textContent = `Xin chào, ${loggedInUsername}`;
+    } else {
+        // Nếu không tìm thấy username, có thể chuyển hướng về trang đăng nhập
+        // hoặc ẩn phần hiển thị username
+        usernameDisplay.textContent = 'Xin chào, Admin'; // Fallback nếu không có username
+    }
+
+    // Cập nhật nút Đăng xuất để xóa cả username khi đăng xuất
+    document.getElementById('logoutButton').addEventListener('click', function() {
+        localStorage.removeItem('loggedInUserType');
+        localStorage.removeItem('loggedInUsername'); // <--- XÓA USERNAME KHI ĐĂNG XUẤT
+    });
+});
+    </script>
+</body>
+</html>

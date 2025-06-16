@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard - Xem Minh chứng</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">
+        <h1 style="color: #28a745;">Tra cứu thông tin Minh chứng</h1>
+        <div class="user-info-logout">
+            <span id="loggedInUsernameDisplay" class="username-display"></span>
+            <a href="login.html" class="logout-button" id="logoutButton">Đăng xuất</a>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchTerm" placeholder="Nhập từ khóa tìm kiếm...">
+        <select id="searchColumn">
+            <option value="all">Tìm tất cả các cột</option>
+            <option value="ID">ID</option>
+            <option value="Tiêu chí">Tiêu chí</option>
+            <option value="Tiêu chuẩn">Tiêu chuẩn</option>
+            <option value="Mã minh chứng">Mã minh chứng</option>
+            <option value="Mã dùng chung">Mã dùng chung</option>
+            <option value="Tên minh chứng">Tên minh chứng</option>
+        </select>
+        <button id="searchButton">Tìm kiếm</button>
+        <button id="clearSearchButton">Xóa tìm kiếm</button>
+    </div>
+
+    <table class="user-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Tiêu chí</th>
+                <th>Tiêu chuẩn</th>
+                <th>Mã minh chứng</th>
+                <th>Mã dùng chung</th>
+                <th>Tên minh chứng</th>
+                <th>File minh chứng</th>
+            </tr>
+        </thead>
+        <tbody id="proofsTableBody">
+            </tbody>
+    </table>
+
+    <script>
+        const APPS_SCRIPT_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwE-WhSz4iZ_FoUEBjGzTOvgYd5DGYvCEymYIBnqV3bDtWTukDhaugz-NaDtAtc-Qz9/exec'; // <-- Dán URL WEB APP VÀO ĐÂY
+
+        // Kiểm tra quyền truy cập khi tải trang
+        const userType = localStorage.getItem('loggedInUserType');
+        if (userType !== 'user' && userType !== 'admin') { // Admin cũng có thể xem trang này
+            alert('Bạn không có quyền truy cập trang này. Vui lòng đăng nhập.');
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            localStorage.removeItem('loggedInUserType');
+        });
+
+        const proofsTableBody = document.getElementById('proofsTableBody');
+        const searchTermInput = document.getElementById('searchTerm');
+        const searchColumnSelect = document.getElementById('searchColumn');
+        const searchButton = document.getElementById('searchButton');
+        const clearSearchButton = document.getElementById('clearSearchButton');
+
+        async function renderProofsTable(searchParams = null) {
+            proofsTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Đang tải dữ liệu...</td></tr>';
+
+            const params = searchParams || new URLSearchParams();
+            params.append('action', searchParams ? 'searchProofs' : 'getData');
+
+            try {
+                const response = await fetch(APPS_SCRIPT_WEB_APP_URL, {
+                    method: 'POST',
+                    body: params
+                });
+                const result = await response.json();
+
+                proofsTableBody.innerHTML = '';
+
+                if (result.status === 'success' && result.data.length > 0) {
+                    result.data.forEach(proof => {
+                        const row = proofsTableBody.insertRow();
+                        row.innerHTML = `
+                            <td>${proof.ID || ''}</td>
+                            <td>${proof['Tiêu chí'] || ''}</td>
+                            <td>${proof['Tiêu chuẩn'] || ''}</td>
+                            <td>${proof['Mã minh chứng'] || ''}</td>
+                            <td>${proof['Mã dùng chung'] || ''}</td>
+                            <td>${proof['Tên minh chứng'] || ''}</td>
+                            <td>${proof['File minh chứng'] ? `<a href="${proof['File minh chứng']}" target="_blank">Xem File</a>` : 'N/A'}</td>
+                        `;
+                    });
+                } else {
+                    proofsTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">' + (searchTermInput.value ? 'Không tìm thấy minh chứng phù hợp.' : 'Không có dữ liệu minh chứng.') + '</td></tr>';
+                }
+            } catch (error) {
+                console.error('Lỗi tải dữ liệu:', error);
+                proofsTableBody.innerHTML = '<tr><td colspan="7" style="color:red; text-align:center;">Đã có lỗi xảy ra khi tải dữ liệu minh chứng. Vui lòng kiểm tra console.</td></tr>';
+            }
+        }
+
+        // Xử lý tìm kiếm
+        searchButton.addEventListener('click', () => {
+            const searchTerm = searchTermInput.value.trim();
+            const searchColumn = searchColumnSelect.value;
+
+            const params = new URLSearchParams();
+            params.append('searchTerm', searchTerm);
+            params.append('searchColumn', searchColumn);
+            renderProofsTable(params);
+        });
+
+        // Xử lý xóa tìm kiếm
+        clearSearchButton.addEventListener('click', () => {
+            searchTermInput.value = '';
+            searchColumnSelect.value = 'all';
+            renderProofsTable(); // Tải lại tất cả dữ liệu
+        });
+
+        renderProofsTable();
+    </script>
+</body>
+</html>
