@@ -11,7 +11,7 @@
         <h1 style="color: #28a745;">Tra cứu thông tin Minh chứng</h1>
         <div class="user-info-logout">
             <span id="loggedInUsernameDisplay" class="username-display"></span>
-            <a href="login.html" class="logout-button" id="logoutButton">Đăng xuất</a>
+            <a href="index.html" class="logout-button" id="logoutButton">Đăng xuất</a>
         </div>
     </div>
 
@@ -27,7 +27,7 @@
             <option value="Tên minh chứng">Tên minh chứng</option>
         </select>
         <button id="searchButton">Tìm kiếm</button>
-        <button id="clearSearchButton">Xóa tìm kiếm</button>
+        <button id="clearSearchButton">Xem tất cả</button>
     </div>
 
     <table class="user-table">
@@ -53,7 +53,7 @@
         const userType = localStorage.getItem('loggedInUserType');
         if (userType !== 'user' && userType !== 'admin') { // Admin cũng có thể xem trang này
             alert('Bạn không có quyền truy cập trang này. Vui lòng đăng nhập.');
-            window.location.href = 'login.html';
+            window.location.href = 'index.html';
         }
 
         document.getElementById('logoutButton').addEventListener('click', function() {
