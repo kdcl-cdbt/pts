@@ -122,7 +122,11 @@
         });
 
         renderProofsTable();
-
+        
+      // Thêm vào cuối cùng của thẻ <script> trong user_dashboard.html
+        document.addEventListener('DOMContentLoaded', () => {
+        const usernameDisplay = document.getElementById('loggedInUsernameDisplay');
+        const loggedInUsername = localStorage.getItem('loggedInUsername');
         if (loggedInUsername) {
             usernameDisplay.textContent = `Xin chào, ${loggedInUsername}`;
         } else {
