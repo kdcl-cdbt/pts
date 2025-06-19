@@ -123,23 +123,7 @@
 
         renderProofsTable();
         
-      // Thêm vào cuối cùng của thẻ <script> trong user_dashboard.html
-        document.addEventListener('DOMContentLoaded', () => {
-        const usernameDisplay = document.getElementById('loggedInUsernameDisplay');
-        const loggedInUsername = localStorage.getItem('loggedInUsername');
-        if (loggedInUsername) {
-            usernameDisplay.textContent = `Xin chào, ${loggedInUsername}`;
-        } else {
-            // Nếu không tìm thấy username, có thể chuyển hướng về trang đăng nhập
-            // hoặc ẩn phần hiển thị username
-            usernameDisplay.textContent = 'Xin chào!'; // Fallback nếu không có username
-        }
-
-        // Cập nhật nút Đăng xuất để xóa cả username khi đăng xuất
-        document.getElementById('logoutButton').addEventListener('click', function() {
-        localStorage.removeItem('loggedInUserType');
-        localStorage.removeItem('loggedInUsername'); // <--- XÓA USERNAME KHI ĐĂNG XUẤT
-        });
+     
     </script>
 </body>
 </html>
