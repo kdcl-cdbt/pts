@@ -11,7 +11,7 @@
         <h1>Quản lý Minh chứng</h1>
         <div class="user-info-logout">
         <span id="loggedInUsernameDisplay" class="username-display"></span>
-        <a href="login.html" class="logout-button" id="logoutButton">Đăng xuất</a>
+        <a href="index.html" class="logout-button" id="logoutButton">Đăng xuất</a>
         </div>
     </div>
 
@@ -33,7 +33,7 @@
             <option value="Tên minh chứng">Tên minh chứng</option>
         </select>
         <button id="searchButton">Tìm kiếm</button>
-        <button id="clearSearchButton">Xóa tìm kiếm</button>
+        <button id="clearSearchButton">Xem tất cả</button>
     </div>
 
     <table class="admin-table">
@@ -85,8 +85,10 @@
                     <p style="font-size: 0.9em; color: #666;">(Chỉ chọn file nếu muốn cập nhật/thêm mới file)</p>
                 </div>
                 <input type="hidden" id="currentFileUrl" name="fileMinhChung"> 
+                <div style="text-align: right;"> <!--canh lề phải cho 2 nút-->
                 <button type="submit" class="save">Lưu</button>
                 <button type="button" class="cancel" id="cancelProofModal">Hủy</button>
+                </div>    
                 <p id="modalMessage" class="modal-message error"></p>
             </form>
         </div>
